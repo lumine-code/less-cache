@@ -1,13 +1,34 @@
 const crypto = require('crypto');
-const {basename, dirname, extname, join, relative} = require('path');
+const fs = require('fs');
+const {basename, dirname, extname, isAbsolute, join, relative} = require('path');
 
-const _ = require('underscore-plus');
-const fs = require('fs-plus');
 let less = null; // Defer until it is actually used
 let lessFs = null; // Defer until it is actually used
-const walkdir = require('walkdir').sync;
 
 const cacheVersion = 1;
+
+function arraysEqual(left, right) {
+  if (left === right) return true;
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+}
+
+function getFiles(directoryPath) {
+  const files = [];
+  const entries = fs.readdirSync(directoryPath, {withFileTypes: true})
+    .sort((left, right) => left.name.localeCompare(right.name));
+
+  for (const entry of entries) {
+    const entryPath = join(directoryPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...getFiles(entryPath));
+    } else if (entry.isFile()) {
+      files.push(entryPath);
+    }
+  }
+
+  return files;
+}
 
 module.exports =
 class LessCache {
@@ -64,7 +85,7 @@ class LessCache {
 
   getDirectory() { return this.cacheDir; }
 
-  getImportPaths() { return _.clone(this.importPaths); }
+  getImportPaths() { return [...this.importPaths]; }
 
   getImportedFiles(importPaths) {
     let importedFiles = [];
@@ -81,14 +102,13 @@ class LessCache {
         importedFiles = importedFiles.concat(importedFilePaths);
       } else {
         try {
-          walkdir(absoluteImportPath, {no_return: true}, (filePath, stat) => {
-            if (!stat.isFile()) { return; }
+          for (const filePath of getFiles(absoluteImportPath)) {
             if (this.resourcePath != null) {
-              return importedFiles.push(this.relativize(this.resourcePath, filePath));
+              importedFiles.push(this.relativize(this.resourcePath, filePath));
             } else {
-              return importedFiles.push(filePath);
+              importedFiles.push(filePath);
             }
-          });
+          }
         } catch (error) {
           continue;
         }
@@ -101,8 +121,8 @@ class LessCache {
   setImportPaths(importPaths = []) {
     const importedFiles = this.getImportedFiles(importPaths);
 
-    const pathsChanged = !_.isEqual(this.importPaths, importPaths);
-    const filesChanged = !_.isEqual(this.importedFiles, importedFiles);
+    const pathsChanged = !arraysEqual(this.importPaths, importPaths);
+    const filesChanged = !arraysEqual(this.importedFiles, importedFiles);
     if (pathsChanged) {
       this.importsCacheDir = this.cacheDirectoryForImports(importPaths);
       if (this.fallbackDir) {
@@ -110,11 +130,11 @@ class LessCache {
       }
     } else if (filesChanged) {
       try {
-        fs.removeSync(this.importsCacheDir);
+        fs.rmSync(this.importsCacheDir, {recursive: true, force: true});
       } catch (error) {
         if ((error != null ? error.code : undefined) === 'ENOENT') {
           try {
-            fs.removeSync(this.importsCacheDir); // Retry once
+            fs.rmSync(this.importsCacheDir, {recursive: true, force: true}); // Retry once
           } catch (error1) {}
         }
       }
@@ -169,7 +189,10 @@ class LessCache {
 
   readJson(filePath) { return JSON.parse(fs.readFileSync(filePath)); }
 
-  writeJson(filePath, object) { return fs.writeFileSync(filePath, JSON.stringify(object)); }
+  writeJson(filePath, object) {
+    fs.mkdirSync(dirname(filePath), {recursive: true});
+    return fs.writeFileSync(filePath, JSON.stringify(object));
+  }
 
   digestForPath(relativeFilePath) {
     const lessSource = this.lessSourcesByRelativeFilePath[relativeFilePath];
@@ -177,7 +200,7 @@ class LessCache {
       return lessSource.digest;
     } else {
       let absoluteFilePath = null;
-      if (this.resourcePath && !fs.isAbsolute(relativeFilePath)) {
+      if (this.resourcePath && !isAbsolute(relativeFilePath)) {
         absoluteFilePath = join(this.resourcePath, relativeFilePath);
       } else {
         absoluteFilePath = relativeFilePath;
@@ -285,7 +308,7 @@ class LessCache {
   // Returns the compiled CSS for the given path.
   readFileSync(absoluteFilePath) {
     let lessSource = null;
-    if (this.resourcePath && fs.isAbsolute(absoluteFilePath)) {
+    if (this.resourcePath && isAbsolute(absoluteFilePath)) {
       const relativeFilePath = this.relativize(this.resourcePath, absoluteFilePath);
       lessSource = this.lessSourcesByRelativeFilePath[relativeFilePath];
     }

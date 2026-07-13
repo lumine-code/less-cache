@@ -1,28 +1,23 @@
 fs = require 'fs'
 {dirname, join} = require 'path'
-
-tmp = require 'tmp'
-temp = require('temp').track()
-fstream = require 'fstream'
+{tmpdir} = require 'os'
 
 LessCache = require '../src/less-cache'
 
 describe "LessCache", ->
-  [cache, fixturesDir] = []
+  [cache, fixturesDir, tempDir] = []
 
   beforeEach ->
-    fixturesDir = null
-    tmp.dir (error, tempDir) ->
-      reader = fstream.Reader(join(__dirname, 'fixtures'))
-      reader.on 'end', ->
-        fixturesDir = tempDir
-        cacheConfig =
-          importPaths: [join(fixturesDir, 'imports-1'), join(fixturesDir, 'imports-2')]
-          cacheDir: join(tempDir, 'cache')
-        cache = new LessCache(cacheConfig)
-      reader.pipe(fstream.Writer(tempDir))
+    tempDir = fs.mkdtempSync(join(tmpdir(), 'less-cache-'))
+    fixturesDir = join(tempDir, 'fixtures')
+    fs.cpSync(join(__dirname, 'fixtures'), fixturesDir, recursive: true)
+    cacheConfig =
+      importPaths: [join(fixturesDir, 'imports-1'), join(fixturesDir, 'imports-2')]
+      cacheDir: join(tempDir, 'cache')
+    cache = new LessCache(cacheConfig)
 
-    waitsFor -> fixturesDir?
+  afterEach ->
+    fs.rmSync(tempDir, recursive: true, force: true)
 
   describe "::cssForFile(filePath)", ->
     filePath = null
@@ -95,7 +90,7 @@ describe "LessCache", ->
       """
 
     it "returns the cached CSS for a given Less file path", ->
-      spyOn(cache, 'parseLess').andCallThrough()
+      spyOn(cache, 'parseLess').and.callThrough()
       expect(cache.readFileSync(join(fixturesDir, 'imports.less'))).toBe """
         body {
           a: 1;
@@ -105,7 +100,7 @@ describe "LessCache", ->
         }
 
       """
-      expect(cache.parseLess.callCount).toBe 0
+      expect(cache.parseLess.calls.count()).toBe 0
       expect(cache.stats.hits).toBe 1
       expect(cache.stats.misses).toBe 1
 
@@ -173,10 +168,10 @@ describe "LessCache", ->
       """
 
     it "reflect changes to the import paths array", ->
-      spyOn(cache, 'parseLess').andCallThrough()
+      spyOn(cache, 'parseLess').and.callThrough()
       cache.setImportPaths([join(fixturesDir, 'imports-1'), join(fixturesDir, 'imports-2')])
       cache.readFileSync(join(fixturesDir, 'imports.less'))
-      expect(cache.parseLess.callCount).toBe 0
+      expect(cache.parseLess.calls.count()).toBe 0
 
       cache.setImportPaths([join(fixturesDir, 'imports-2'), join(fixturesDir, 'imports-1'), join(fixturesDir, 'import-does-not-exist')])
       css = cache.readFileSync(join(fixturesDir, 'imports.less'))
@@ -189,9 +184,9 @@ describe "LessCache", ->
         }
 
       """
-      expect(cache.parseLess.callCount).toBe 1
+      expect(cache.parseLess.calls.count()).toBe 1
 
-      cache.parseLess.reset()
+      cache.parseLess.calls.reset()
       cache.setImportPaths([join(fixturesDir, 'imports-1'), join(fixturesDir, 'imports-2')])
       expect(cache.readFileSync(join(fixturesDir, 'imports.less'))).toBe """
         body {
@@ -202,13 +197,13 @@ describe "LessCache", ->
         }
 
       """
-      expect(cache.parseLess.callCount).toBe 0
+      expect(cache.parseLess.calls.count()).toBe 0
 
     it "reuses cached CSS across cache instances", ->
       cache2 = new LessCache(cacheDir: cache.getDirectory(), importPaths: cache.getImportPaths())
-      spyOn(cache2, 'parseLess').andCallThrough()
+      spyOn(cache2, 'parseLess').and.callThrough()
       cache2.readFileSync(join(fixturesDir, 'imports.less'))
-      expect(cache2.parseLess.callCount).toBe 0
+      expect(cache2.parseLess.calls.count()).toBe 0
 
     it "throws compile errors", ->
       expect(-> cache.readFileSync(join(fixturesDir, 'invalid.less'))).toThrow()
@@ -236,9 +231,9 @@ describe "LessCache", ->
         fallbackDir: cache2.getDirectory()
         resourcePath: fixturesDir
 
-      spyOn(cache3, 'parseLess').andCallThrough()
+      spyOn(cache3, 'parseLess').and.callThrough()
       cache3.readFileSync(join(fixturesDir, 'imports.less'))
-      expect(cache3.parseLess.callCount).toBe 0
+      expect(cache3.parseLess.calls.count()).toBe 0
 
   describe "when syncCaches option is set to true", ->
     it "writes the cache entry to the fallback cache when initially uncached", ->
@@ -318,7 +313,7 @@ describe "LessCache", ->
 
   describe "when providing a resource path and less sources by relative file path", ->
     it "reads from the provided sources first, and falls back to reading from disk if a valid source isn't available", ->
-      cacheDir = temp.mkdirSync()
+      cacheDir = join(tempDir, 'source-cache')
       cache1 = new LessCache
         cacheDir: cacheDir
         importPaths: [join(fixturesDir, 'imports-1'), join(fixturesDir, 'imports-2')]
@@ -423,7 +418,7 @@ describe "LessCache", ->
 
   describe "when providing a resource path and import files by relative file path", ->
     it "reads from the provided file paths first, and falls back to reading from disk if a valid file path isn't available", ->
-      cacheDir = temp.mkdirSync()
+      cacheDir = join(tempDir, 'import-path-cache')
       cache1 = new LessCache
         cacheDir: cacheDir
         importPaths: [join(fixturesDir, 'imports-1'), join(fixturesDir, 'imports-2')]

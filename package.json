@@ -1,34 +1,35 @@
 {
-  "name": "@pulsar-edit/less-cache",
-  "version": "2.0.1",
-  "description": "Less compile cache",
+  "name": "@lumine-code/less-cache",
+  "version": "3.0.0",
+  "description": "Caches compiled Less stylesheets and invalidates them when source files or imports change.",
   "main": "./src/less-cache",
   "scripts": {
-    "test": "jasmine-focused --captureExceptions --coffee spec"
+    "test": "jasmine"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/pulsar-edit/less-cache.git"
-  },
-  "bugs": {
-    "url": "https://github.com/pulsar-edit/less-cache/issues"
-  },
+  "repository": "https://github.com/lumine-code/less-cache",
+  "bugs": "https://github.com/lumine-code/less-cache/issues",
+  "homepage": "https://github.com/lumine-code/less-cache/",
   "keywords": [
     "less",
     "less.js",
     "cache"
   ],
+  "author": "lumine-code",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "src"
+  ],
   "dependencies": {
-    "fs-plus": "^3.1.1",
-    "less": "^4.1.3",
-    "underscore-plus": "^1.7.0",
-    "walkdir": "^0.4.1"
+    "less": "^4.6.7"
   },
   "devDependencies": {
-    "fstream": "^1.0.12",
-    "jasmine-focused": "^1",
-    "temp": "^0.9.4",
-    "tmp": "0.2.1"
+    "coffeescript": "2.7.0",
+    "jasmine": "^6.3.0"
   }
 }
