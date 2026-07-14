@@ -29,7 +29,6 @@
     "less": "^4.6.7"
   },
   "devDependencies": {
-    "coffeescript": "2.7.0",
     "jasmine": "^6.3.0"
   }
 }
