@@ -45,6 +45,15 @@ npm install
 npm test
 ```
 
+## Changes
+
+This is the Lumine fork of `less-cache`, published under the `@lumine-code` scope. Relative to the upstream Pulsar package it:
+
+- Rebrands and modernizes the package as `@lumine-code/less-cache` and releases it as a new major version.
+- Converts the test suite to JavaScript.
+- Prepares token-free npm publishing.
+- Updates the license attribution for Lumine.
+
 ## Contributing
 
 Bug reports and contributions are welcome on GitHub.
