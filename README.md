@@ -59,4 +59,4 @@ This is the Lumine fork of `less-cache`, published under the `@lumine-code` scop
 
 ## Contributing
 
-Bug reports and contributions are welcome on GitHub.
+Got ideas to make this package better, found a bug, or want to help add new features? Just drop your thoughts on GitHub. Any feedback is welcome!
