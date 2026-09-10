@@ -1,6 +1,6 @@
 {
   "name": "@lumine-code/less-cache",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "description": "Caches compiled Less stylesheets and invalidates them when source files or imports change.",
   "main": "./src/less-cache",
   "scripts": {
