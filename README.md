@@ -21,14 +21,14 @@ npm install @lumine-code/less-cache
 ## Usage
 
 ```js
-const LessCache = require('@lumine-code/less-cache')
+const LessCache = require("@lumine-code/less-cache");
 
 const cache = new LessCache({
-  cacheDir: '/tmp/less-cache',
-  importPaths: ['/path/to/theme/styles']
-})
+  cacheDir: "/tmp/less-cache",
+  importPaths: ["/path/to/theme/styles"],
+});
 
-const css = cache.readFileSync('/path/to/theme/index.less')
+const css = cache.readFileSync("/path/to/theme/index.less");
 ```
 
 The constructor accepts the following options:
