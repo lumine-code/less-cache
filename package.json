@@ -23,7 +23,8 @@
     "node": ">=20"
   },
   "files": [
-    "src"
+    "src",
+    "THIRD_PARTY_NOTICES"
   ],
   "dependencies": {
     "less": "^4.6.7"
